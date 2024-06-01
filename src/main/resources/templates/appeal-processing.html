@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Appeal Processing</title>
+</head>
+<body>
+<h1>Appeal Processing Page</h1>
+<div th:if="${isAdmin}">
+    <a href="/appeal-processing/add-appeal">
+        <button>Add Appeal</button>
+    </a>
+</div>
+<div th:if="${isSupervisor}">
+    <a href="/appeal-processing/add-appeal">
+        <button>Add Appeal</button>
+    </a>
+    <a href="/appeal-processing/verify-appeal">
+        <button>Verify Appeal</button>
+    </a>
+</div>
+</body>
+</html>
