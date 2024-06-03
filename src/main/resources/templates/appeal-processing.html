@@ -5,12 +5,12 @@
 </head>
 <body>
 <h1>Appeal Processing Page</h1>
-<div th:if="${isAdmin}">
+<div th:if="User">
     <a href="/appeal-processing/add-appeal">
         <button>Add Appeal</button>
     </a>
 </div>
-<div th:if="${isSupervisor}">
+<div th:if="Admin">
     <a href="/appeal-processing/add-appeal">
         <button>Add Appeal</button>
     </a>
