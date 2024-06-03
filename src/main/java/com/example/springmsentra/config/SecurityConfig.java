@@ -1,41 +1,59 @@
 package com.example.springmsentra.config;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.jaas.AuthorityGranter;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
-import java.util.Collection;
-import java.util.stream.Collectors;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
+import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
-@Configuration
-public class SecurityConfig extends AADResourceServerWebSecurityConfigurerAdapter {
+import java.util.HashSet;
+import java.util.Set;
 
-    @Override
-    protected void configure(HttpSecurity http) throws Exception {
-        http
-                .authorizeRequests()
-                .antMatchers("/appeal-processing/add-appeal").hasAuthority("ROLE_sample.admin")
-                .antMatchers("/appeal-processing/verify-appeal").hasAuthority("ROLE_sample.supervisor")
-                .anyRequest().authenticated()
-                .and()
-                .oauth2ResourceServer().jwt();
-    }
+@Configuration(proxyBeanMethods = false)
+@EnableWebSecurity
+@EnableMethodSecurity
+public class SecurityConfig {
 
     @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter converter = new JwtGrantedAuthoritiesConverter();
-        converter.setAuthorityPrefix("ROLE_");
-        converter.setAuthoritiesClaimName("groups");
-        return new JwtAuthenticationConverter(converter);
+    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+        http
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/admin/**").hasRole("Admin")
+                        .requestMatchers("/user/**").hasRole("User")
+                )
+                .httpBasic(Customizer.withDefaults())
+                .formLogin(Customizer.withDefaults());
+        return http.build();
+    }
+
+    private OidcUserService oidcUserService() {
+        OidcUserService delegate = new OidcUserService();
+        return new OidcUserService() {
+            @Override
+            public OidcUser loadUser(OidcUserRequest userRequest) {
+                OidcUser oidcUser = delegate.loadUser(userRequest);
+                Set<GrantedAuthority> mappedAuthorities = new HashSet<>();
+
+                oidcUser.getAuthorities().forEach(authority -> {
+                    if (authority.getAuthority().contains("sample.admin")) {
+                        mappedAuthorities.add(new SimpleGrantedAuthority("ROLE_Admin"));
+                    } else if (authority.getAuthority().contains("sample.user")) {
+                        mappedAuthorities.add(new SimpleGrantedAuthority("ROLE_User"));
+                    }
+                });
+
+                return new DefaultOidcUser(mappedAuthorities, oidcUser.getIdToken(), oidcUser.getUserInfo());
+            }
+        };
     }
 }
