@@ -2,6 +2,7 @@ package com.example.springmsentra.config;
 
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
@@ -45,12 +46,15 @@ public class SecurityConfig {
                         .userInfoEndpoint(userInfo -> userInfo
                                 .oidcUserService(oidcUserService()) // Use custom OidcUserService
                         )
-                        .successHandler(customAuthenticationSuccessHandler) // Set custom success handler
+                        //.successHandler(customAuthenticationSuccessHandler) // Set custom success handler
                 )
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/login/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("Admin")
-                        .requestMatchers("/user/**").hasRole("User")
-                );
+                        .requestMatchers("/user/**").hasAnyRole("User", "Admin")
+                        .anyRequest().authenticated()
+                )
+                .csrf(AbstractHttpConfigurer::disable);
         return http.build();
     }
 
@@ -66,9 +70,9 @@ public class SecurityConfig {
                 if (groups != null) {
                     groups.forEach(group -> {
                         if (group.equals("sample.admin")) {
-                            mappedAuthorities.add(new SimpleGrantedAuthority("Admin"));
+                            mappedAuthorities.add(new SimpleGrantedAuthority("ROLE_Admin"));
                         } else if (group.equals("sample.user")) {
-                            mappedAuthorities.add(new SimpleGrantedAuthority("User"));
+                            mappedAuthorities.add(new SimpleGrantedAuthority("ROLE_User"));
                         }
                     });
                 }

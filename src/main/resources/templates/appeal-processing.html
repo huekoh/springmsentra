@@ -1,16 +1,16 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <title>Appeal Processing</title>
 </head>
 <body>
 <h1>Appeal Processing Page</h1>
-<div th:if="User">
+<div sec:authorize="hasRole('User')">
     <a href="/appeal-processing/add-appeal">
         <button>Add Appeal</button>
     </a>
 </div>
-<div th:if="Admin">
+<div sec:authorize="hasRole('Admin')">
     <a href="/appeal-processing/add-appeal">
         <button>Add Appeal</button>
     </a>
